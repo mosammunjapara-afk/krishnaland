@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% block title %}Lead – {{ lead.name }}{% endblock %}
+{% block page_title %}{{ lead.name }}{% endblock %}
+{% block page_subtitle %}Lead #{{ lead.id }} · {{ lead.mobile }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.lead-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+.info-section { margin-bottom: 20px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.info-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.info-item:nth-child(odd) { padding-right: 24px; }
+.info-label { font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.info-value { font-size: 14px; color: var(--text); font-weight: 500; }
+.score-big { font-family: 'Playfair Display', serif; font-size: 56px; font-weight: 700;
+    line-height: 1; margin-bottom: 4px; }
+.score-card { border-radius: 12px; padding: 24px; text-align: center; }
+.score-card.hot { background: var(--hot-bg); border: 1.5px solid #F1A9A0; }
+.score-card.warm { background: var(--warm-bg); border: 1.5px solid #F0CC80; }
+.score-card.cold { background: var(--cold-bg); border: 1.5px solid #90C0CC; }
+.score-hot { color: var(--hot); }
+.score-warm { color: var(--warm); }
+.score-cold { color: var(--cold); }
+.timeline-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.timeline-icon { width: 34px; height: 34px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.timeline-icon.call { background: #E8F5E8; color: var(--primary); }
+.timeline-icon.fu   { background: var(--warm-bg); color: var(--warm); }
+.panel-section { margin-bottom: 16px; }
+.panel-section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+@media (max-width: 900px) {
+    .lead-layout { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
+    <a href="{{ url_for('leads') }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-arrow-left"></i> All Leads
+    </a>
+    <a href="{{ url_for('profile_form', lead_id=lead.id, step=1) }}" class="btn btn-accent btn-sm">
+        <i class="fas fa-clipboard-list"></i>
+        {% if profile %}Edit Profile{% else %}Fill Profile{% endif %}
+    </a>
+    {% if session.role in ['admin','manager'] %}
+    <form method="POST" action="{{ url_for('assign_lead') }}" style="display:flex;gap:8px;">
+        <input type="hidden" name="lead_id" value="{{ lead.id }}">
+        <select name="caller_id" class="form-select" style="width:180px;padding:7px 10px;font-size:12px;">
+            <option value="">Reassign to...</option>
+            {% for caller in callers %}
+            <option value="{{ caller.id }}">{{ caller.full_name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+    </form>
+    {% endif %}
+
+    <div style="margin-left:auto;display:flex;gap:8px;">
+        <form method="POST" action="{{ url_for('update_lead_status', lead_id=lead.id) }}" style="display:flex;gap:8px;">
+            <select name="status" class="form-select" style="width:160px;padding:7px 10px;font-size:12px;">
+                {% for st in ['New','Called','Interested','Profiled','Converted','Not Interested','Not Reachable','Callback'] %}
+                <option {% if lead.status == st %}selected{% endif %}>{{ st }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+        </form>
+    </div>
+</div>
+
+<div class="lead-layout">
+    <!-- LEFT: Lead Info -->
+    <div>
+        <!-- Basic Info -->
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-header" style="padding:18px 24px;">
+                <span class="card-title">Client Information</span>
+                <span class="badge badge-{{ lead.status|lower|replace(' ','') }}">{{ lead.status }}</span>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Full Name</div>
+                        <div class="info-value">{{ lead.name }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Mobile</div>
+                        <div class="info-value"><a href="tel:{{ lead.mobile }}" style="color:var(--primary);">{{ lead.mobile }}</a></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">WhatsApp</div>
+                        <div class="info-value">{{ lead.whatsapp or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">{{ lead.email or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">City / State</div>
+                        <div class="info-value">{{ lead.city or '' }}{% if lead.city and lead.state %}, {% endif %}{{ lead.state or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Age Group</div>
+                        <div class="info-value">{{ lead.age_group or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Assigned To</div>
+                        <div class="info-value">{{ lead.caller_name or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Added On</div>
+                        <div class="info-value">{{ lead.created_at[:10] if lead.created_at else '–' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if profile %}
+        <!-- Profile Details -->
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-header" style="padding:18px 24px;">
+                <span class="card-title">Investment Profile</span>
+                <a href="{{ url_for('profile_form', lead_id=lead.id, step=2) }}" class="btn btn-outline btn-sm">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Occupation</div>
+                        <div class="info-value">{{ profile.occupation or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Company</div>
+                        <div class="info-value">{{ profile.company_name or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Monthly Income</div>
+                        <div class="info-value">{{ profile.monthly_income or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Experience</div>
+                        <div class="info-value">{{ profile.investment_experience or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Budget Range</div>
+                        <div class="info-value" style="color:var(--primary);font-weight:600;">{{ profile.budget_range or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Payment Mode</div>
+                        <div class="info-value">{{ profile.payment_preference or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Purpose</div>
+                        <div class="info-value">{{ profile.purpose or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Holding Period</div>
+                        <div class="info-value">{{ profile.holding_period or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Dholera Aware</div>
+                        <div class="info-value">
+                            {% if profile.dholera_aware == 'Yes' %}
+                            <span style="color:#1A6B1A;"><i class="fas fa-check-circle"></i> Yes</span>
+                            {% else %}{{ profile.dholera_aware or '–' }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Awareness Source</div>
+                        <div class="info-value">{{ profile.awareness_source or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Plot Size</div>
+                        <div class="info-value">{{ profile.plot_size or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Project Type</div>
+                        <div class="info-value">{{ profile.project_type or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Risk Appetite</div>
+                        <div class="info-value">{{ profile.risk_appetite or '–' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Timeline</div>
+                        <div class="info-value" style="color:var(--hot);font-weight:600;">{{ profile.investment_timeline or '–' }}</div>
+                    </div>
+                </div>
+                {% if profile.interest_drivers %}
+                <div style="margin-top:12px;">
+                    <div class="info-label">Interest Drivers</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                        {% for d in profile.interest_drivers.split(',') %}
+                        {% if d.strip() %}
+                        <span class="badge badge-new">{{ d.strip() }}</span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if profile.remarks %}
+                <div style="margin-top:16px;padding:12px 16px;background:var(--surface2);
+                    border-radius:8px;border-left:3px solid var(--accent);">
+                    <div class="info-label" style="margin-bottom:6px;">Remarks</div>
+                    <div style="font-size:14px;">{{ profile.remarks }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-body">
+                <div class="empty-state" style="padding:32px;">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>No Profile Yet</h3>
+                    <p>Complete the 9-step profile form for this customer</p>
+                    <a href="{{ url_for('profile_form', lead_id=lead.id, step=1) }}"
+                        class="btn btn-accent" style="margin-top:16px;">
+                        <i class="fas fa-play"></i> Start Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Call Logs -->
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-header" style="padding:18px 24px;">
+                <span class="card-title">Call History</span>
+                <button onclick="document.getElementById('log-call-modal').style.display='flex'"
+                    class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Log Call
+                </button>
+            </div>
+            <div class="card-body" style="padding:12px 24px;">
+                {% if call_logs %}
+                {% for log in call_logs %}
+                <div class="timeline-item">
+                    <div class="timeline-icon call"><i class="fas fa-phone-alt"></i></div>
+                    <div>
+                        <div style="font-size:13px;font-weight:500;">{{ log.caller_name }}</div>
+                        <div style="font-size:13px;color:var(--text-muted);">{{ log.notes or 'No notes' }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                            {{ log.call_date[:16] if log.call_date else '' }}
+                            {% if log.duration_minutes %} · {{ log.duration_minutes }} min{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted" style="text-align:center;padding:24px;">No calls logged yet</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Follow-ups -->
+        <div class="card">
+            <div class="card-header" style="padding:18px 24px;">
+                <span class="card-title">Follow-ups</span>
+                <button onclick="document.getElementById('followup-modal').style.display='flex'"
+                    class="btn btn-accent btn-sm">
+                    <i class="fas fa-calendar-plus"></i> Schedule
+                </button>
+            </div>
+            <div class="card-body" style="padding:12px 24px;">
+                {% if followups %}
+                {% for fu in followups %}
+                <div class="timeline-item">
+                    <div class="timeline-icon fu"><i class="fas fa-calendar-alt"></i></div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--warm);">
+                            {{ fu.follow_up_date }}
+                        </div>
+                        <div style="font-size:13px;color:var(--text-muted);">{{ fu.notes or '–' }}</div>
+                        <span class="badge {% if fu.status == 'Pending' %}badge-warm{% else %}badge-converted{% endif %}"
+                            style="margin-top:4px;">{{ fu.status }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted" style="text-align:center;padding:24px;">No follow-ups scheduled</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Score Panel -->
+    <div>
+        {% if profile %}
+        <!-- Score Card -->
+        {% set cat = profile.lead_category or 'Cold' %}
+        <div class="score-card {{ cat|lower }}" style="margin-bottom:18px;">
+            <div class="score-big score-{{ cat|lower }}">{{ profile.lead_score or 0 }}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">out of 13 points</div>
+            <div class="score-bar" style="height:8px;margin-bottom:14px;">
+                <div class="score-fill" style="width:{{ ((profile.lead_score or 0)/13*100)|int }}%;
+                    background:{% if cat=='Hot' %}var(--hot){% elif cat=='Warm' %}var(--warm){% else %}var(--cold){% endif %};"></div>
+            </div>
+            <span class="badge badge-{{ cat|lower }}" style="font-size:15px;padding:6px 20px;">
+                {% if cat == 'Hot' %}🔥{% elif cat == 'Warm' %}☀️{% else %}❄️{% endif %}
+                {{ cat }} Lead
+            </span>
+            <div style="margin-top:16px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+                <div>Score ≥ 10 = 🔥 Hot</div>
+                <div>Score 6–9 = ☀️ Warm</div>
+                <div>Score 0–5 = ❄️ Cold</div>
+            </div>
+        </div>
+
+        <!-- Score Breakdown -->
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-header" style="padding:16px 20px;">
+                <span class="card-title" style="font-size:14px;">Score Breakdown</span>
+            </div>
+            <div class="card-body" style="padding:14px 20px;">
+                {% set checks = [
+                    (profile.budget_range in ['₹25–50 Lakhs','₹50 Lakhs – ₹1 Cr','₹1 Cr+'], 'Budget ≥ ₹25 Lakhs', '+3'),
+                    (profile.investment_timeline in ['Immediate','Within 1 Month'], 'Immediate Timeline', '+3'),
+                    (profile.dholera_aware == 'Yes', 'Dholera Aware', '+2'),
+                    (profile.investment_experience == 'Experienced Investor', 'Experienced Investor', '+2'),
+                    (profile.payment_preference == 'Full Payment', 'Full Payment', '+2'),
+                    (profile.risk_appetite in ['Moderate','High'], 'Moderate/High Risk', '+1'),
+                ] %}
+                {% for check, label, pts in checks %}
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;">
+                    <span>
+                        <i class="fas fa-{% if check %}check{% else %}times{% endif %}"
+                            style="color:{% if check %}#1A6B1A{% else %}var(--border){% endif %};
+                            width:16px;margin-right:8px;"></i>
+                        {{ label }}
+                    </span>
+                    <span style="font-weight:700;color:{% if check %}var(--primary){% else %}var(--border){% endif %};">
+                        {{ pts if check else '0' }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sales Info -->
+        {% if profile %}
+        <div class="card">
+            <div class="card-header" style="padding:16px 20px;">
+                <span class="card-title" style="font-size:14px;">Sales Details</span>
+            </div>
+            <div class="card-body" style="padding:14px 20px;">
+                <div class="panel-section">
+                    <div class="panel-section-title">Lead Source</div>
+                    <p style="font-size:14px;">{{ profile.lead_source or '–' }}</p>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-section-title">Executive</div>
+                    <p style="font-size:14px;">{{ profile.assigned_executive or '–' }}</p>
+                </div>
+                {% if profile.follow_up_date %}
+                <div class="panel-section">
+                    <div class="panel-section-title">Follow-up Date</div>
+                    <p style="font-size:14px;font-weight:600;color:var(--warm);">{{ profile.follow_up_date }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Log Call Modal -->
+<div id="log-call-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);
+    z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:12px;padding:28px;width:440px;max-width:90vw;">
+        <h3 style="font-family:'Playfair Display',serif;color:var(--primary);margin-bottom:20px;">
+            Log Call
+        </h3>
+        <form method="POST" action="{{ url_for('log_call', lead_id=lead.id) }}">
+            <div class="form-group">
+                <label>Call Notes</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="What was discussed..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" name="duration" class="form-control" placeholder="5" min="0">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" onclick="document.getElementById('log-call-modal').style.display='none'"
+                    class="btn btn-outline">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Call</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Follow-up Modal -->
+<div id="followup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);
+    z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:12px;padding:28px;width:440px;max-width:90vw;">
+        <h3 style="font-family:'Playfair Display',serif;color:var(--primary);margin-bottom:20px;">
+            Schedule Follow-up
+        </h3>
+        <form method="POST" action="{{ url_for('add_followup', lead_id=lead.id) }}">
+            <div class="form-group">
+                <label>Follow-up Date <span class="required">*</span></label>
+                <input type="date" name="follow_up_date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="What to discuss..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" onclick="document.getElementById('followup-modal').style.display='none'"
+                    class="btn btn-outline">Cancel</button>
+                <button type="submit" class="btn btn-accent">Schedule</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}All Leads – Krishna CRM{% endblock %}
+{% block page_title %}Lead Management{% endblock %}
+{% block page_subtitle %}All Dholera project leads{% endblock %}
+
+{% block content %}
+<!-- Search & Filter -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body" style="padding:16px 20px;">
+        <form method="GET" action="{{ url_for('leads') }}">
+            <div class="search-bar">
+                <div class="search-input-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search" class="form-control search-input"
+                        placeholder="Search by name, mobile, email..." value="{{ search }}">
+                </div>
+                <select name="status" class="form-select" style="width:170px;">
+                    <option value="">All Status</option>
+                    <option {% if status_filter=='New' %}selected{% endif %}>New</option>
+                    <option {% if status_filter=='Called' %}selected{% endif %}>Called</option>
+                    <option {% if status_filter=='Interested' %}selected{% endif %}>Interested</option>
+                    <option {% if status_filter=='Profiled' %}selected{% endif %}>Profiled</option>
+                    <option {% if status_filter=='Converted' %}selected{% endif %}>Converted</option>
+                    <option {% if status_filter=='Not Interested' %}selected{% endif %}>Not Interested</option>
+                    <option {% if status_filter=='Not Reachable' %}selected{% endif %}>Not Reachable</option>
+                </select>
+                <select name="category" class="form-select" style="width:150px;">
+                    <option value="">All Categories</option>
+                    <option {% if category_filter=='Hot' %}selected{% endif %}>Hot</option>
+                    <option {% if category_filter=='Warm' %}selected{% endif %}>Warm</option>
+                    <option {% if category_filter=='Cold' %}selected{% endif %}>Cold</option>
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a href="{{ url_for('leads') }}" class="btn btn-outline">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Form -->
+<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <a href="{{ url_for('add_lead') }}" class="btn btn-accent">
+        <i class="fas fa-user-plus"></i> Add Lead
+    </a>
+    <form method="POST" action="{{ url_for('import_leads') }}" enctype="multipart/form-data"
+        style="display:flex;gap:8px;align-items:center;">
+        <input type="file" name="excel_file" accept=".xlsx"
+            class="form-control" style="width:220px;padding:7px 10px;font-size:12px;">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-upload"></i> Import
+        </button>
+    </form>
+    <a href="{{ url_for('export_leads') }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-file-excel"></i> Export
+    </a>
+    <a href="{{ url_for('download_template') }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-download"></i> Template
+    </a>
+    <span class="text-muted" style="margin-left:auto;font-size:13px;">
+        {{ leads|length }} lead(s) found
+    </span>
+</div>
+
+<!-- Leads Table -->
+<div class="card">
+    <div class="table-wrap">
+        {% if leads %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>City / State</th>
+                    <th>Status</th>
+                    <th>Category</th>
+                    <th>Score</th>
+                    <th>Budget</th>
+                    <th>Timeline</th>
+                    {% if session.role != 'caller' %}<th>Assigned To</th>{% endif %}
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in leads %}
+                <tr>
+                    <td style="color:var(--text-muted);font-size:12px;">{{ lead.id }}</td>
+                    <td>
+                        <a href="{{ url_for('view_lead', lead_id=lead.id) }}"
+                            style="font-weight:600;color:var(--primary);text-decoration:none;">
+                            {{ lead.name }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="tel:{{ lead.mobile }}" style="color:var(--text);text-decoration:none;">
+                            {{ lead.mobile }}
+                        </a>
+                    </td>
+                    <td style="font-size:13px;">
+                        {{ lead.city or '' }}{% if lead.city and lead.state %}, {% endif %}{{ lead.state or '' }}
+                    </td>
+                    <td>
+                        {% set st = lead.status|lower|replace(' ','') %}
+                        <span class="badge badge-{{ st }}">{{ lead.status }}</span>
+                    </td>
+                    <td>
+                        {% if lead.lead_category %}
+                        <span class="badge badge-{{ lead.lead_category|lower }}">
+                            {% if lead.lead_category == 'Hot' %}🔥{% elif lead.lead_category == 'Warm' %}☀️{% else %}❄️{% endif %}
+                            {{ lead.lead_category }}
+                        </span>
+                        {% else %}<span class="text-muted">–</span>{% endif %}
+                    </td>
+                    <td style="font-weight:700;color:var(--primary);">
+                        {{ lead.lead_score or '–' }}
+                    </td>
+                    <td style="font-size:12px;">{{ lead.budget_range or '–' }}</td>
+                    <td style="font-size:12px;">{{ lead.investment_timeline or '–' }}</td>
+                    {% if session.role != 'caller' %}
+                    <td style="font-size:13px;">{{ lead.caller_name or '–' }}</td>
+                    {% endif %}
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ lead.created_at[:10] if lead.created_at else '–' }}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            <a href="{{ url_for('view_lead', lead_id=lead.id) }}"
+                                class="btn btn-outline btn-sm" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if lead.status == 'Interested' or lead.status == 'Profiled' %}
+                            <a href="{{ url_for('profile_form', lead_id=lead.id, step=1) }}"
+                                class="btn btn-accent btn-sm" title="Edit Profile">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('profile_form', lead_id=lead.id, step=1) }}"
+                                class="btn btn-outline btn-sm" title="Profile">
+                                <i class="fas fa-clipboard-list"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>No leads found</h3>
+            <p>Try changing your filters or add a new lead</p>
+            <a href="{{ url_for('add_lead') }}" class="btn btn-accent" style="margin-top:16px;">
+                <i class="fas fa-plus"></i> Add Lead
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Reports – Krishna CRM{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block page_subtitle %}Overview of leads, conversions and team performance{% endblock %}
+
+{% block content %}
+
+<!-- Summary Stat Cards -->
+<div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value">
+                {% set total = namespace(n=0) %}
+                {% for row in status_data %}{% set total.n = total.n + row.count %}{% endfor %}
+                {{ total.n }}
+            </div>
+            <div class="stat-label">Total Leads</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fas fa-fire"></i></div>
+        <div>
+            <div class="stat-value">
+                {% for row in category_data %}{% if row.lead_category == 'Hot' %}{{ row.count }}{% endif %}{% endfor %}
+            </div>
+            <div class="stat-label">Hot Leads</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fas fa-handshake"></i></div>
+        <div>
+            <div class="stat-value">
+                {% for row in status_data %}{% if row.status == 'Converted' %}{{ row.count }}{% endif %}{% endfor %}
+            </div>
+            <div class="stat-label">Converted</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon teal"><i class="fas fa-phone-alt"></i></div>
+        <div>
+            <div class="stat-value">{{ caller_perf|length }}</div>
+            <div class="stat-label">Active Callers</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+
+    <!-- Lead Status Breakdown -->
+    <div class="card">
+        <div class="card-header" style="padding:18px 24px 14px;">
+            <span class="card-title"><i class="fas fa-chart-pie" style="color:var(--accent);margin-right:6px;"></i>Lead Status Breakdown</span>
+        </div>
+        <div class="card-body" style="padding:16px 24px;">
+            {% if status_data %}
+                {% set s_total = namespace(n=0) %}
+                {% for row in status_data %}{% set s_total.n = s_total.n + row.count %}{% endfor %}
+                {% for row in status_data %}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <div style="min-width:110px;font-size:13px;font-weight:500;color:var(--text);">{{ row.status }}</div>
+                    <div style="flex:1;background:var(--bg);border-radius:4px;height:10px;overflow:hidden;">
+                        <div style="height:100%;background:var(--accent);border-radius:4px;width:{{ ((row.count / s_total.n) * 100)|int }}%;"></div>
+                    </div>
+                    <div style="min-width:36px;text-align:right;font-weight:700;font-size:13px;color:var(--primary);">{{ row.count }}</div>
+                    <div style="min-width:36px;text-align:right;font-size:11px;color:var(--text-muted);">{{ ((row.count / s_total.n) * 100)|int }}%</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No data yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lead Category Breakdown -->
+    <div class="card">
+        <div class="card-header" style="padding:18px 24px 14px;">
+            <span class="card-title"><i class="fas fa-tag" style="color:var(--accent);margin-right:6px;"></i>Category Distribution</span>
+        </div>
+        <div class="card-body" style="padding:16px 24px;">
+            {% set colors = {'Hot': '#C0392B', 'Warm': '#C8871A', 'Cold': '#4A7A8A'} %}
+            {% set icons = {'Hot': '🔥', 'Warm': '☀️', 'Cold': '❄️'} %}
+            {% if category_data %}
+                {% set c_total = namespace(n=0) %}
+                {% for row in category_data %}{% if row.lead_category %}{% set c_total.n = c_total.n + row.count %}{% endif %}{% endfor %}
+                {% for row in category_data %}
+                {% if row.lead_category %}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <div style="min-width:80px;font-size:13px;font-weight:500;">
+                        {{ icons.get(row.lead_category, '') }} {{ row.lead_category }}
+                    </div>
+                    <div style="flex:1;background:var(--bg);border-radius:4px;height:10px;overflow:hidden;">
+                        <div style="height:100%;border-radius:4px;background:{{ colors.get(row.lead_category, '#999') }};width:{{ ((row.count / c_total.n) * 100)|int if c_total.n else 0 }}%;"></div>
+                    </div>
+                    <div style="font-weight:700;font-size:13px;color:var(--primary);">{{ row.count }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No profiled leads yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Trend -->
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header" style="padding:18px 24px 14px;">
+        <span class="card-title"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:6px;"></i>Monthly Lead Trend</span>
+    </div>
+    <div class="card-body" style="padding:16px 24px;">
+        {% if monthly %}
+            {% set m_max = namespace(n=1) %}
+            {% for row in monthly %}{% if row.count > m_max.n %}{% set m_max.n = row.count %}{% endif %}{% endfor %}
+            <div style="display:flex;align-items:flex-end;gap:10px;height:120px;padding-bottom:8px;border-bottom:2px solid var(--border);">
+                {% for row in monthly|reverse %}
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                    <div style="font-size:11px;font-weight:600;color:var(--primary);">{{ row.count }}</div>
+                    <div style="width:100%;background:var(--accent);border-radius:4px 4px 0 0;
+                        height:{{ ((row.count / m_max.n) * 90)|int }}px;min-height:4px;
+                        opacity:0.85;transition:opacity 0.2s;" title="{{ row.month }}: {{ row.count }} leads">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="display:flex;gap:10px;margin-top:6px;">
+                {% for row in monthly|reverse %}
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">
+                    {{ row.month[5:] if row.month else '' }}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No monthly data yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Caller Performance Table -->
+<div class="card">
+    <div class="card-header" style="padding:18px 24px;">
+        <span class="card-title"><i class="fas fa-trophy" style="color:var(--accent);margin-right:6px;"></i>Caller Performance</span>
+    </div>
+    <div class="table-wrap">
+        {% if caller_perf %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Caller Name</th>
+                    <th>Total Leads</th>
+                    <th>Converted</th>
+                    <th>Conversion Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for caller in caller_perf %}
+                <tr>
+                    <td style="color:var(--text-muted);">{{ loop.index }}</td>
+                    <td style="font-weight:600;">{{ caller.full_name }}</td>
+                    <td>{{ caller.leads or 0 }}</td>
+                    <td>
+                        <span style="color:#27AE60;font-weight:600;">{{ caller.converted or 0 }}</span>
+                    </td>
+                    <td>
+                        {% if caller.leads and caller.leads > 0 %}
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:80px;background:var(--bg);border-radius:3px;height:7px;overflow:hidden;">
+                                <div style="width:{{ ((caller.converted or 0) / caller.leads * 100)|int }}%;height:100%;background:#27AE60;border-radius:3px;"></div>
+                            </div>
+                            <span style="font-size:12px;font-weight:600;">{{ ((caller.converted or 0) / caller.leads * 100)|int }}%</span>
+                        </div>
+                        {% else %}–{% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No caller data.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <h3>No performance data yet</h3>
+            <p>Performance stats will appear as callers add and update leads.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top:20px;display:flex;gap:10px;">
+    <a href="{{ url_for('export_leads') }}" class="btn btn-primary">
+        <i class="fas fa-file-excel"></i> Export All Leads to Excel
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add enumerate filter workaround — use loop.index0
+</script>
+{% endblock %}

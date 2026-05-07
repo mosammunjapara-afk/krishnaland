@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+{% block title %}Customer Profile – Step {{ step }} of 9{% endblock %}
+{% block page_title %}Customer Profiling{% endblock %}
+{% block page_subtitle %}{{ lead.name }} · Step {{ step }} of 9{% endblock %}
+
+{% block extra_css %}
+<style>
+.wizard-container { max-width: 760px; margin: 0 auto; }
+.progress-wrap { background: var(--surface); border-radius: 10px; padding: 20px 28px;
+    border: 1px solid var(--border); margin-bottom: 24px; }
+.progress-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.progress-label { font-size: 12px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; }
+.progress-pct { font-size: 13px; font-weight: 700; color: var(--primary); }
+.progress-bar-outer { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 4px; transition: width 0.4s ease; }
+.step-dots { display: flex; gap: 4px; margin-top: 12px; justify-content: center; }
+.step-dot { width: 28px; height: 6px; border-radius: 3px; background: var(--border); }
+.step-dot.done { background: var(--primary); }
+.step-dot.current { background: var(--accent); }
+.step-info { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.step-num { width: 44px; height: 44px; background: var(--primary); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+.step-title-text h3 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--primary); }
+.step-title-text p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.form-card { background: var(--surface); border-radius: 10px; border: 1px solid var(--border);
+    padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px; margin-top: 4px; }
+.nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+.customer-tag { background: var(--accent-pale); border: 1px solid #F0CC80;
+    border-radius: 8px; padding: 10px 16px; margin-bottom: 24px; display: flex;
+    align-items: center; gap: 12px; }
+.customer-tag .name { font-weight: 600; color: var(--primary); }
+.customer-tag .mob { font-size: 13px; color: var(--text-muted); }
+
+/* Follow-up date validation styles */
+.date-error {
+    color: #C0392B;
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+}
+.form-control.invalid {
+    border-color: #C0392B !important;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <!-- Customer Tag -->
+    <div class="customer-tag">
+        <div style="width:40px;height:40px;background:var(--primary);border-radius:50%;
+            display:flex;align-items:center;justify-content:center;color:white;font-weight:700;">
+            {{ lead.name[0].upper() }}
+        </div>
+        <div>
+            <div class="name">{{ lead.name }}</div>
+            <div class="mob"><i class="fas fa-phone-alt"></i> {{ lead.mobile }}</div>
+        </div>
+        <div style="margin-left:auto;">
+            <a href="{{ url_for('view_lead', lead_id=lead.id) }}" class="btn btn-outline btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Lead
+            </a>
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+        <div class="progress-top">
+            <span class="progress-label">Profile Completion</span>
+            <span class="progress-pct">{{ ((step/9)*100)|int }}%</span>
+        </div>
+        <div class="progress-bar-outer">
+            <div class="progress-bar-inner" style="width:{{ ((step/9)*100)|int }}%;"></div>
+        </div>
+        <div class="step-dots">
+            {% for i in range(1, 10) %}
+            <div class="step-dot {% if i < step %}done{% elif i == step %}current{% endif %}"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step Titles -->
+    {% set step_info = {
+        1: ('Client Basic Details', 'Personal contact information'),
+        2: ('Professional Profile', 'Occupation & financial background'),
+        3: ('Investment Capacity', 'Budget & payment preference'),
+        4: ('Investment Objective', 'Goals & holding period'),
+        5: ('Dholera Awareness', 'Knowledge & interest drivers'),
+        6: ('Property Preference', 'Plot size & project type'),
+        7: ('Risk Profile', 'Investor risk appetite'),
+        8: ('Purchase Timeline', 'When to invest'),
+        9: ('Sales Remarks', 'Internal notes & follow-up')
+    } %}
+
+    <div class="step-info">
+        <div class="step-num">{{ step }}</div>
+        <div class="step-title-text">
+            <h3>{{ step_info[step][0] }}</h3>
+            <p>{{ step_info[step][1] }}</p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+        <form method="POST" action="{{ url_for('profile_form', lead_id=lead.id, step=step) }}"
+              id="profile-step-form" onsubmit="return validateStep({{ step }})">
+
+            <!-- STEP 1: Basic Details -->
+            {% if step == 1 %}
+            <p class="section-label">Contact Information</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" value="{{ lead.name }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number <span class="required">*</span></label>
+                    <input type="tel" class="form-control" value="{{ lead.mobile }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input type="tel" name="whatsapp" class="form-control"
+                        value="{{ lead.whatsapp or '' }}" placeholder="WhatsApp number">
+                </div>
+                <div class="form-group">
+                    <label>Email ID</label>
+                    <input type="email" name="email" class="form-control"
+                        value="{{ lead.email or '' }}" placeholder="customer@email.com">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city" class="form-control"
+                        value="{{ lead.city or '' }}" placeholder="City">
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" name="state" class="form-control"
+                        value="{{ lead.state or '' }}" placeholder="State">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Age Group</label>
+                <div class="option-grid">
+                    {% for ag in ['18–30', '30–45', '45–60', '60+'] %}
+                    <div class="option-item">
+                        <input type="radio" name="age_group" id="ag_{{ loop.index }}" value="{{ ag }}"
+                            {% if lead.age_group == ag %}checked{% endif %}>
+                        <label for="ag_{{ loop.index }}">{{ ag }} years</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 2: Professional -->
+            {% elif step == 2 %}
+            <p class="section-label">Occupation</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for occ in ['Salaried', 'Business Owner', 'Self-Employed', 'NRI', 'Retired'] %}
+                    <div class="option-item">
+                        <input type="radio" name="occupation" id="occ_{{ loop.index }}" value="{{ occ }}"
+                            {% if profile and profile.occupation == occ %}checked{% endif %}>
+                        <label for="occ_{{ loop.index }}">{{ occ }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Company / Business Name</label>
+                    <input type="text" name="company_name" class="form-control"
+                        value="{{ profile.company_name if profile else '' }}" placeholder="Company or business name">
+                </div>
+            </div>
+            <p class="section-label">Financial Profile</p>
+            <div class="form-group">
+                <label>Monthly Income</label>
+                <div class="option-grid">
+                    {% for inc in ['Below ₹50K', '₹50K–₹1L', '₹1L–₹3L', '₹3L+'] %}
+                    <div class="option-item">
+                        <input type="radio" name="monthly_income" id="inc_{{ loop.index }}" value="{{ inc }}"
+                            {% if profile and profile.monthly_income == inc %}checked{% endif %}>
+                        <label for="inc_{{ loop.index }}">{{ inc }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Investment Experience</label>
+                <div class="option-grid">
+                    {% for exp in ['First Time Investor', 'Experienced Investor'] %}
+                    <div class="option-item">
+                        <input type="radio" name="investment_experience" id="exp_{{ loop.index }}" value="{{ exp }}"
+                            {% if profile and profile.investment_experience == exp %}checked{% endif %}>
+                        <label for="exp_{{ loop.index }}">{{ exp }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 3: Investment Capacity -->
+            {% elif step == 3 %}
+            <p class="section-label">Budget Range</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for br in ['₹5–10 Lakhs', '₹10–25 Lakhs', '₹25–50 Lakhs', '₹50 Lakhs – ₹1 Cr', '₹1 Cr+'] %}
+                    <div class="option-item">
+                        <input type="radio" name="budget_range" id="br_{{ loop.index }}" value="{{ br }}"
+                            {% if profile and profile.budget_range == br %}checked{% endif %}>
+                        <label for="br_{{ loop.index }}">{{ br }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <p class="section-label">Payment Preference</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for pp in ['Full Payment', 'Installments', 'Loan'] %}
+                    <div class="option-item">
+                        <input type="radio" name="payment_preference" id="pp_{{ loop.index }}" value="{{ pp }}"
+                            {% if profile and profile.payment_preference == pp %}checked{% endif %}
+                            onchange="toggleLoanSection(this.value)">
+                        <label for="pp_{{ loop.index }}">{{ pp }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Loan sub-section -->
+            <div id="loan-section" style="display:{% if profile and profile.payment_preference == 'Loan' %}block{% else %}none{% endif %};">
+                <p class="section-label">Loan Details</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Loan Bank</label>
+                        <input type="text" name="loan_bank" class="form-control"
+                            value="{{ profile.loan_bank if profile else '' }}" placeholder="Bank name">
+                    </div>
+                    <div class="form-group">
+                        <label>Loan Amount (₹)</label>
+                        <input type="text" name="loan_amount" class="form-control"
+                            value="{{ profile.loan_amount if profile else '' }}" placeholder="e.g. 2500000">
+                    </div>
+                    <div class="form-group">
+                        <label>Loan Tenure (Months)</label>
+                        <input type="number" name="loan_tenure_months" class="form-control"
+                            value="{{ profile.loan_tenure_months if profile else '' }}"
+                            placeholder="e.g. 120" min="1" max="360">
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: Objective -->
+            {% elif step == 4 %}
+            <p class="section-label">Investment Purpose</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for pur in ['Long-Term Growth', 'Short-Term Profit', 'End Use', 'Portfolio Diversification'] %}
+                    <div class="option-item">
+                        <input type="radio" name="purpose" id="pur_{{ loop.index }}" value="{{ pur }}"
+                            {% if profile and profile.purpose == pur %}checked{% endif %}>
+                        <label for="pur_{{ loop.index }}">{{ pur }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <p class="section-label">Holding Period</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for hp in ['1–3 Years', '3–5 Years', '5–10 Years', '10+ Years'] %}
+                    <div class="option-item">
+                        <input type="radio" name="holding_period" id="hp_{{ loop.index }}" value="{{ hp }}"
+                            {% if profile and profile.holding_period == hp %}checked{% endif %}>
+                        <label for="hp_{{ loop.index }}">{{ hp }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 5: Dholera Awareness -->
+            {% elif step == 5 %}
+            <p class="section-label">Dholera SIR Knowledge</p>
+            <div class="form-group">
+                <label>Are you aware of Dholera Special Investment Region?</label>
+                <div class="option-grid">
+                    {% for aw in ['Yes', 'No'] %}
+                    <div class="option-item">
+                        <input type="radio" name="dholera_aware" id="aw_{{ loop.index }}" value="{{ aw }}"
+                            {% if profile and profile.dholera_aware == aw %}checked{% endif %}>
+                        <label for="aw_{{ loop.index }}">{{ aw }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <p class="section-label">Information Source</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for src in ['Social Media', 'Reference', 'Ads', 'Channel Partner', 'Website'] %}
+                    <div class="option-item">
+                        <input type="radio" name="awareness_source" id="src_{{ loop.index }}" value="{{ src }}"
+                            {% if profile and profile.awareness_source == src %}checked{% endif %}>
+                        <label for="src_{{ loop.index }}">{{ src }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <p class="section-label">Interest Drivers (Select all that apply)</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% set selected_drivers = (profile.interest_drivers or '').split(',') if profile else [] %}
+                    {% for drv in ['Government Project', 'Price Appreciation', 'Smart City Development', 'Infrastructure Growth'] %}
+                    <div class="option-item">
+                        <input type="checkbox" name="interest_drivers" id="drv_{{ loop.index }}" value="{{ drv }}"
+                            {% if drv in selected_drivers %}checked{% endif %}>
+                        <label for="drv_{{ loop.index }}">{{ drv }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 6: Property Preference -->
+            {% elif step == 6 %}
+            <p class="section-label">Preferred Plot Size</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for ps in ['100–150 sq. yds', '150–250 sq. yds', '250–500 sq. yds', '500+ sq. yds'] %}
+                    <div class="option-item">
+                        <input type="radio" name="plot_size" id="ps_{{ loop.index }}" value="{{ ps }}"
+                            {% if profile and profile.plot_size == ps %}checked{% endif %}>
+                        <label for="ps_{{ loop.index }}">{{ ps }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <p class="section-label">Project Type</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for pt in ['NA-NOC Clear', 'TP Approved', 'Gated Scheme', 'Farm Land'] %}
+                    <div class="option-item">
+                        <input type="radio" name="project_type" id="pt_{{ loop.index }}" value="{{ pt }}"
+                            {% if profile and profile.project_type == pt %}checked{% endif %}>
+                        <label for="pt_{{ loop.index }}">{{ pt }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 7: Risk -->
+            {% elif step == 7 %}
+            <p class="section-label">Risk Appetite Assessment</p>
+            <div class="form-group">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                    {% for ra, desc in [('Low','Conservative investor, prefers safety'), ('Moderate','Balanced risk-return approach'), ('High','Aggressive, seeks maximum returns')] %}
+                    <div class="option-item" style="display:block;">
+                        <input type="radio" name="risk_appetite" id="ra_{{ loop.index }}" value="{{ ra }}"
+                            {% if profile and profile.risk_appetite == ra %}checked{% endif %}>
+                        <label for="ra_{{ loop.index }}" style="flex-direction:column;align-items:flex-start;padding:16px;">
+                            <span style="font-weight:600;font-size:15px;margin-bottom:4px;">{{ ra }}</span>
+                            <span style="font-size:11px;color:var(--text-muted);font-weight:400;">{{ desc }}</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 8: Timeline -->
+            {% elif step == 8 %}
+            <p class="section-label">Investment Timeline</p>
+            <div class="form-group">
+                <div class="option-grid">
+                    {% for tl in ['Immediate', 'Within 1 Month', '1–3 Months', '3–6 Months', 'Just Exploring'] %}
+                    <div class="option-item">
+                        <input type="radio" name="investment_timeline" id="tl_{{ loop.index }}" value="{{ tl }}"
+                            {% if profile and profile.investment_timeline == tl %}checked{% endif %}>
+                        <label for="tl_{{ loop.index }}">{{ tl }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 9: Remarks -->
+            {% elif step == 9 %}
+            <p class="section-label">Sales Team Information</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Lead Source</label>
+                    <select name="lead_source" class="form-select">
+                        <option value="">Select source</option>
+                        {% for src in ['Cold Call', 'Reference', 'Social Media', 'Website', 'Walk-in', 'Channel Partner', 'Exhibition', 'Other'] %}
+                        <option {% if profile and profile.lead_source == src %}selected{% endif %}>{{ src }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assigned Executive</label>
+                    <input type="text" name="assigned_executive" class="form-control"
+                        value="{{ profile.assigned_executive if profile else '' }}"
+                        placeholder="Sales executive name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Follow-up Date
+                    <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px;">
+                        (must be today or a future date)
+                    </span>
+                </label>
+                <input type="date" name="follow_up_date" id="follow_up_date" class="form-control"
+                    value="{{ profile.follow_up_date if profile else '' }}"
+                    onchange="validateFollowUpDate(this)">
+                <div class="date-error" id="fu-date-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Follow-up date cannot be in the past. Please choose today or a future date.
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Remarks / Notes</label>
+                <textarea name="remarks" class="form-control" rows="4"
+                    placeholder="Add any important notes about this customer...">{{ profile.remarks if profile else '' }}</textarea>
+            </div>
+            <div style="background:var(--accent-pale);border-radius:8px;padding:14px 18px;
+                border:1px solid #F0CC80;font-size:13px;color:var(--text-muted);">
+                <i class="fas fa-calculator" style="color:var(--accent);"></i>
+                <strong style="color:var(--primary);">Lead Score will be automatically calculated</strong>
+                based on budget, timeline, awareness, experience, payment preference, and risk appetite.
+            </div>
+            {% endif %}
+
+            <!-- Navigation Buttons -->
+            <div class="nav-buttons">
+                {% if step > 1 %}
+                <a href="{{ url_for('profile_form', lead_id=lead.id, step=step-1) }}"
+                    class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Previous
+                </a>
+                {% else %}
+                <a href="{{ url_for('view_lead', lead_id=lead.id) }}" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% endif %}
+
+                <button type="submit" class="btn btn-{% if step == 9 %}accent{% else %}primary{% endif %}">
+                    {% if step == 9 %}
+                    <i class="fas fa-check-circle"></i> Save & Calculate Score
+                    {% else %}
+                    Next <i class="fas fa-arrow-right"></i>
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Follow-up Date Validation ──
+function getTodayDate() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// Set min attribute on follow-up date input (Step 9)
+document.addEventListener('DOMContentLoaded', function () {
+    const fuInput = document.getElementById('follow_up_date');
+    if (fuInput) {
+        fuInput.setAttribute('min', getTodayDate());
+        // If existing value is in past, clear it
+        if (fuInput.value && fuInput.value < getTodayDate()) {
+            fuInput.value = '';
+        }
+    }
+
+    // Loan section toggle (Step 3)
+    const loanSection = document.getElementById('loan-section');
+    if (loanSection) {
+        const checked = document.querySelector('input[name="payment_preference"]:checked');
+        if (checked) toggleLoanSection(checked.value);
+    }
+});
+
+function validateFollowUpDate(input) {
+    const errorEl = document.getElementById('fu-date-error');
+    const today = getTodayDate();
+    if (input.value && input.value < today) {
+        input.classList.add('invalid');
+        if (errorEl) errorEl.style.display = 'flex';
+        return false;
+    } else {
+        input.classList.remove('invalid');
+        if (errorEl) errorEl.style.display = 'none';
+        return true;
+    }
+}
+
+function validateStep(step) {
+    if (step === 9) {
+        const fuInput = document.getElementById('follow_up_date');
+        if (fuInput && fuInput.value) {
+            return validateFollowUpDate(fuInput);
+        }
+    }
+    return true;
+}
+
+// ── Loan section toggle (Step 3) ──
+function toggleLoanSection(value) {
+    const loanSection = document.getElementById('loan-section');
+    if (loanSection) {
+        loanSection.style.display = (value === 'Loan') ? 'block' : 'none';
+    }
+}
+</script>
+{% endblock %}
