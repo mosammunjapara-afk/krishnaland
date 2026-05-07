@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+{% block title %}Add Lead – Krishna CRM{% endblock %}
+{% block page_title %}Add New Lead{% endblock %}
+{% block page_subtitle %}Quick lead entry for Dholera project{% endblock %}
+
+{% block extra_css %}
+<style>
+.flow-step { display: none; }
+.flow-step.active { display: block; }
+
+.flow-question {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.flow-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+.choice-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 22px 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+}
+.choice-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-pale);
+    color: var(--accent);
+}
+.choice-btn.yes-btn:hover, .choice-btn.yes-btn.selected {
+    border-color: var(--primary);
+    background: #E8F0E8;
+    color: var(--primary);
+}
+.choice-btn.no-btn:hover, .choice-btn.no-btn.selected {
+    border-color: #C0392B;
+    background: #FDECEA;
+    color: #C0392B;
+}
+.choice-btn.interested-btn:hover, .choice-btn.interested-btn.selected {
+    border-color: #27AE60;
+    background: #EAFAF1;
+    color: #27AE60;
+}
+.choice-btn i { font-size: 26px; opacity: 0.8; }
+
+.reason-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.reason-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-weight: 500;
+}
+.reason-item:hover {
+    border-color: var(--accent);
+    background: var(--accent-pale);
+}
+.reason-item input[type="radio"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.reason-item.selected {
+    border-color: var(--accent);
+    background: var(--accent-pale);
+}
+
+.step-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.step-breadcrumb .crumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.step-breadcrumb .crumb.done { color: var(--primary); font-weight: 600; }
+.step-breadcrumb .crumb.active { color: var(--accent); font-weight: 600; }
+.step-breadcrumb i.sep { font-size: 10px; opacity: 0.4; }
+
+.info-banner {
+    background: var(--accent-pale);
+    border: 1.5px solid #F0CC80;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.info-banner i { color: var(--accent); margin-top: 1px; flex-shrink: 0; }
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-bottom: 16px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    text-decoration: none;
+}
+.back-link:hover { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:580px;margin:0 auto;">
+    <div class="card">
+        <div class="card-header" style="padding:22px 28px 0;">
+            <span class="card-title">Add New Lead</span>
+        </div>
+        <div class="card-body" style="padding:24px 28px 28px;">
+
+            <!-- ── STEP 0: Basic Info (always visible) ── -->
+            <div id="step-0">
+                <p class="section-label" style="font-size:11px;font-weight:700;letter-spacing:1.5px;
+                    text-transform:uppercase;color:var(--accent);margin-bottom:14px;">
+                    Customer Information
+                </p>
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" id="inp-name" class="form-control"
+                        placeholder="Enter customer's full name" autofocus>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number <span class="required">*</span></label>
+                    <input type="tel" id="inp-mobile" class="form-control"
+                        placeholder="10-digit mobile number" maxlength="15">
+                </div>
+                <button type="button" class="btn btn-primary" style="width:100%;justify-content:center;"
+                    onclick="startFlow()">
+                    <i class="fas fa-arrow-right"></i> Continue
+                </button>
+            </div>
+
+            <!-- ── STEP 1: Call Done? ── -->
+            <div id="step-1" class="flow-step">
+                <button type="button" class="back-link" onclick="goBack(0)">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <div class="step-breadcrumb">
+                    <span class="crumb done"><i class="fas fa-check-circle"></i> Lead Info</span>
+                    <i class="fas fa-chevron-right sep"></i>
+                    <span class="crumb active"><i class="fas fa-phone"></i> Call Status</span>
+                </div>
+
+                <div class="flow-question">📞 Did you make a call?</div>
+                <div class="flow-hint">Was a call attempt made for this lead?</div>
+
+                <div class="choice-grid">
+                    <button type="button" class="choice-btn yes-btn" onclick="callDone(true)">
+                        <i class="fas fa-phone-volume" style="color:var(--primary);"></i>
+                        Yes, Call Made
+                    </button>
+                    <button type="button" class="choice-btn no-btn" onclick="callDone(false)">
+                        <i class="fas fa-phone-slash" style="color:#C0392B;"></i>
+                        No Call Yet
+                    </button>
+                </div>
+
+                <div class="info-banner">
+                    <i class="fas fa-info-circle"></i>
+                    If no call was made, the lead will be saved as <strong>New</strong> for later follow-up.
+                </div>
+            </div>
+
+            <!-- ── STEP 2: Connected? ── -->
+            <div id="step-2" class="flow-step">
+                <button type="button" class="back-link" onclick="goBack(1)">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <div class="step-breadcrumb">
+                    <span class="crumb done"><i class="fas fa-check-circle"></i> Lead Info</span>
+                    <i class="fas fa-chevron-right sep"></i>
+                    <span class="crumb done"><i class="fas fa-check-circle"></i> Call Made</span>
+                    <i class="fas fa-chevron-right sep"></i>
+                    <span class="crumb active"><i class="fas fa-handshake"></i> Connected?</span>
+                </div>
+
+                <div class="flow-question">🤝 Was the call connected?</div>
+                <div class="flow-hint">Did the customer pick up and you spoke to them?</div>
+
+                <div class="choice-grid">
+                    <button type="button" class="choice-btn yes-btn" onclick="callConnected(true)">
+                        <i class="fas fa-check-circle" style="color:var(--primary);"></i>
+                        Yes, Connected
+                    </button>
+                    <button type="button" class="choice-btn no-btn" onclick="callConnected(false)">
+                        <i class="fas fa-times-circle" style="color:#C0392B;"></i>
+                        Not Connected
+                    </button>
+                </div>
+
+                <!-- Reason sub-panel (shown when Not Connected) -->
+                <div id="not-connected-reason" style="display:none;">
+                    <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">
+                        Select reason for not connecting:
+                    </p>
+                    <div class="reason-grid" id="reason-grid">
+                        {% for reason in ['Busy', 'Call Busy', 'Not Reachable', 'Switched Off', 'No Answer', 'Other'] %}
+                        <label class="reason-item" onclick="selectReason(this)">
+                            <input type="radio" name="ui-reason" value="{{ reason }}">
+                            <span>{{ reason }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-primary" style="width:100%;justify-content:center;"
+                        onclick="saveNotConnected()">
+                        <i class="fas fa-save"></i> Save Lead
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── STEP 3: Interest Level ── -->
+            <div id="step-3" class="flow-step">
+                <button type="button" class="back-link" onclick="goBack(2)">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <div class="step-breadcrumb">
+                    <span class="crumb done"><i class="fas fa-check-circle"></i> Lead Info</span>
+                    <i class="fas fa-chevron-right sep"></i>
+                    <span class="crumb done"><i class="fas fa-check-circle"></i> Connected</span>
+                    <i class="fas fa-chevron-right sep"></i>
+                    <span class="crumb active"><i class="fas fa-star"></i> Interest</span>
+                </div>
+
+                <div class="flow-question">⭐ What is the customer's interest level?</div>
+                <div class="flow-hint">How did the customer respond to the Dholera project pitch?</div>
+
+                <div class="choice-grid">
+                    <button type="button" class="choice-btn interested-btn" onclick="setInterest('interested')">
+                        <i class="fas fa-fire" style="color:#27AE60;"></i>
+                        Interested
+                    </button>
+                    <button type="button" class="choice-btn no-btn" onclick="setInterest('notinterested')">
+                        <i class="fas fa-thumbs-down" style="color:#C0392B;"></i>
+                        Not Interested
+                    </button>
+                </div>
+
+                <!-- Not Interested sub-options -->
+                <div id="not-interested-options" style="display:none;">
+                    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+                        Choose how to save this lead:
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button type="button" class="btn btn-outline" style="justify-content:center;"
+                            onclick="saveNotInterested('New')">
+                            <i class="fas fa-redo"></i> Move to New Lead (for later)
+                        </button>
+                        <button type="button" class="btn btn-primary" style="justify-content:center;"
+                            onclick="saveNotInterested('Not Interested')">
+                            <i class="fas fa-save"></i> Save as Not Interested
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden form for actual submission -->
+            <form id="lead-form" method="POST" action="{{ url_for('add_lead') }}" style="display:none;">
+                <input type="hidden" name="name" id="form-name">
+                <input type="hidden" name="mobile" id="form-mobile">
+                <input type="hidden" name="status" id="form-status">
+                <input type="hidden" name="not_connected_reason" id="form-reason">
+                <input type="hidden" name="flow_step" id="form-flow-step" value="save">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 0;
+
+function startFlow() {
+    const name = document.getElementById('inp-name').value.trim();
+    const mobile = document.getElementById('inp-mobile').value.trim();
+    if (!name) { alert('Please enter the customer name.'); return; }
+    if (!mobile || mobile.length < 10) { alert('Please enter a valid mobile number.'); return; }
+    showStep(1);
+}
+
+function showStep(n) {
+    // Hide step 0
+    document.getElementById('step-0').style.display = (n === 0) ? 'block' : 'none';
+    // Hide all flow steps
+    document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+    if (n > 0) {
+        const el = document.getElementById('step-' + n);
+        if (el) el.classList.add('active');
+    }
+    currentStep = n;
+}
+
+function goBack(toStep) {
+    // Reset sub-panels
+    if (toStep <= 2) {
+        document.getElementById('not-connected-reason').style.display = 'none';
+        document.querySelectorAll('.reason-item').forEach(el => el.classList.remove('selected'));
+    }
+    if (toStep <= 3) {
+        document.getElementById('not-interested-options').style.display = 'none';
+    }
+    if (toStep === 0) {
+        document.getElementById('step-0').style.display = 'block';
+        document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+        currentStep = 0;
+    } else {
+        showStep(toStep);
+    }
+}
+
+function callDone(yes) {
+    if (!yes) {
+        // Save as New Lead
+        submitLead('New', '', 'save');
+    } else {
+        showStep(2);
+    }
+}
+
+function callConnected(yes) {
+    if (yes) {
+        showStep(3);
+    } else {
+        // Show reason selection
+        document.getElementById('not-connected-reason').style.display = 'block';
+        // Scroll to it
+        document.getElementById('not-connected-reason').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+}
+
+function selectReason(label) {
+    document.querySelectorAll('.reason-item').forEach(el => el.classList.remove('selected'));
+    label.classList.add('selected');
+    label.querySelector('input[type="radio"]').checked = true;
+}
+
+function saveNotConnected() {
+    const selected = document.querySelector('input[name="ui-reason"]:checked');
+    if (!selected) { alert('Please select a reason.'); return; }
+    submitLead('Not Reachable', selected.value, 'save');
+}
+
+function setInterest(type) {
+    if (type === 'interested') {
+        // Submit as Interested → redirect to profile form
+        submitLead('Interested', '', 'interested');
+    } else {
+        document.getElementById('not-interested-options').style.display = 'block';
+        document.getElementById('not-interested-options').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+}
+
+function saveNotInterested(status) {
+    submitLead(status, '', 'save');
+}
+
+function submitLead(status, reason, flowStep) {
+    const name = document.getElementById('inp-name').value.trim();
+    const mobile = document.getElementById('inp-mobile').value.trim();
+    document.getElementById('form-name').value = name;
+    document.getElementById('form-mobile').value = mobile;
+    document.getElementById('form-status').value = status;
+    document.getElementById('form-reason').value = reason;
+    document.getElementById('form-flow-step').value = flowStep;
+    document.getElementById('lead-form').submit();
+}
+</script>
+{% endblock %}

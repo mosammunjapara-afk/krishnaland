@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – Krishna Land Developers CRM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1C3A1C;
+            --accent: #C8871A;
+            --accent-light: #E8A830;
+            --accent-pale: #FDF3E0;
+            --bg: #F2EDE4;
+            --surface: #FFFFFF;
+            --border: #D9D0BC;
+            --text: #1A1A0F;
+            --text-muted: #6B6555;
+            --hot: #C0392B;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: var(--bg);
+        }
+
+        .login-left {
+            flex: 1;
+            background: var(--primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-left::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 40px,
+                rgba(255,255,255,0.015) 40px,
+                rgba(255,255,255,0.015) 80px
+            );
+        }
+
+        .brand-wrap {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-emblem {
+            width: 90px; height: 90px;
+            background: var(--accent);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            margin: 0 auto 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .brand-wrap h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #FFFFFF;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .brand-wrap .tagline {
+            color: var(--accent-light);
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 48px;
+        }
+
+        .features {
+            text-align: left;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .feature-item:last-child { border-bottom: none; }
+
+        .feature-icon {
+            width: 40px; height: 40px;
+            background: rgba(200,135,26,0.18);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-light);
+            font-size: 17px;
+            flex-shrink: 0;
+        }
+
+        .feature-text h4 {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .feature-text p {
+            color: rgba(255,255,255,0.45);
+            font-size: 12px;
+        }
+
+        /* RIGHT PANEL */
+        .login-right {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 56px;
+            background: var(--surface);
+        }
+
+        .login-form-wrap {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .login-header {
+            margin-bottom: 36px;
+        }
+
+        .login-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        .login-header p { color: var(--text-muted); font-size: 14px; }
+
+        .form-group { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 7px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .input-wrap { position: relative; }
+
+        .input-wrap i {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px 11px 40px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(200,135,26,0.12);
+        }
+
+        .captcha-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .captcha-box {
+            flex-shrink: 0;
+            background: var(--primary);
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            user-select: none;
+            text-decoration: line-through;
+            text-decoration-color: rgba(255,255,255,0.3);
+            filter: blur(0.3px);
+        }
+
+        .captcha-wrap .form-control { padding-left: 14px; }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text-muted);
+        }
+
+        .remember-label input[type="checkbox"] {
+            width: 15px; height: 15px;
+            accent-color: var(--accent);
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-login:hover { background: #2D5A2D; }
+
+        .error-msg {
+            background: #FDECEA;
+            border: 1px solid #F1A9A0;
+            color: var(--hot);
+            padding: 11px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demo-creds {
+            margin-top: 24px;
+            background: var(--accent-pale);
+            border: 1px solid #F0CC80;
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+
+        .demo-creds p {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .demo-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text);
+            padding: 3px 0;
+        }
+
+        .demo-row span:first-child {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .demo-row code {
+            background: rgba(0,0,0,0.06);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 900px) {
+            .login-left { display: none; }
+            .login-right { width: 100%; padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-left">
+        <div class="brand-wrap">
+            <div class="brand-emblem">🏗️</div>
+            <h1>KRISHNA LAND<br>DEVELOPERS</h1>
+            <p class="tagline">Dholera Smart City Projects</p>
+
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-users"></i></div>
+                    <div class="feature-text">
+                        <h4>Lead Management</h4>
+                        <p>Manage all Dholera project leads efficiently</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-fire"></i></div>
+                    <div class="feature-text">
+                        <h4>Auto Lead Scoring</h4>
+                        <p>Hot, Warm & Cold classification system</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="feature-text">
+                        <h4>Performance Analytics</h4>
+                        <p>Real-time team performance tracking</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-file-excel"></i></div>
+                    <div class="feature-text">
+                        <h4>Excel Integration</h4>
+                        <p>Import & export leads with one click</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="login-form-wrap">
+            <div class="login-header">
+                <h2>Welcome Back</h2>
+                <p>Sign in to your CRM account to continue</p>
+            </div>
+
+            {% if error %}
+            <div class="error-msg">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label>Login ID</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-id-badge"></i>
+                        <input type="text" name="identifier" class="form-control"
+                            placeholder="Employee ID / Email / Mobile" required autofocus>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" id="password" class="form-control"
+                            placeholder="Enter your password" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>CAPTCHA Verification</label>
+                    <div class="captcha-wrap">
+                        <div class="captcha-box">{{ captcha }}</div>
+                        <input type="text" name="captcha" class="form-control"
+                            placeholder="Enter code" required maxlength="5"
+                            style="text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label class="remember-label">
+                        <input type="checkbox" name="remember"> Remember me
+                    </label>
+                    <a href="{{ url_for('forgot_password') }}" class="forgot-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> &nbsp;Sign In to CRM
+                </button>
+               
+            </form>
+
+           
+        </div>
+    </div>
+</body>
+</html>

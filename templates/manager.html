@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Manager Panel – Krishna CRM{% endblock %}
+{% block page_title %}Manager Panel{% endblock %}
+{% block page_subtitle %}Team performance & follow-ups overview{% endblock %}
+
+{% block content %}
+<!-- Caller Performance Cards -->
+<h3 style="font-family:'Playfair Display',serif;font-size:17px;color:var(--primary);margin-bottom:14px;">
+    <i class="fas fa-users" style="color:var(--accent);"></i> Caller Performance
+</h3>
+
+{% if callers %}
+<div class="stats-grid" style="margin-bottom:28px;">
+    {% for caller in callers %}
+    <div class="stat-card" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;width:100%;">
+            <div class="stat-icon green" style="width:38px;height:38px;font-size:15px;">
+                {{ caller.full_name[0].upper() }}
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:14px;color:var(--primary);">{{ caller.full_name }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">{{ caller.employee_id }}</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;">
+            <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px 4px;">
+                <div style="font-size:18px;font-weight:700;color:var(--primary);">{{ caller.total_leads or 0 }}</div>
+                <div style="font-size:10px;color:var(--text-muted);">Total Leads</div>
+            </div>
+            <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px 4px;">
+                <div style="font-size:18px;font-weight:700;color:var(--accent);">{{ caller.calls_today or 0 }}</div>
+                <div style="font-size:10px;color:var(--text-muted);">Calls Today</div>
+            </div>
+            <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px 4px;">
+                <div style="font-size:18px;font-weight:700;color:#C0392B;">{{ caller.interested or 0 }}</div>
+                <div style="font-size:10px;color:var(--text-muted);">Interested</div>
+            </div>
+        </div>
+        <a href="{{ url_for('leads') }}?caller={{ caller.id }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;">
+            <i class="fas fa-eye"></i> View Leads
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="margin-bottom:28px;">
+    <div class="empty-state">
+        <i class="fas fa-users"></i>
+        <h3>No active callers</h3>
+        <p>Add callers from the Admin Panel to see performance here</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Follow-ups Due Today -->
+<div class="card">
+    <div class="card-header" style="padding:18px 24px;">
+        <span class="card-title">
+            <i class="fas fa-calendar-check" style="color:var(--accent);margin-right:6px;"></i>
+            Follow-ups Due Today
+        </span>
+        <span class="badge" style="background:var(--accent-pale);color:var(--accent);font-size:12px;padding:4px 10px;border-radius:12px;font-weight:600;">
+            {{ followups_today|length }} pending
+        </span>
+    </div>
+    <div class="table-wrap">
+        {% if followups_today %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Lead Name</th>
+                    <th>Mobile</th>
+                    <th>Assigned Caller</th>
+                    <th>Scheduled At</th>
+                    <th>Notes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fu in followups_today %}
+                <tr>
+                    <td style="font-weight:500;">{{ fu.lead_name }}</td>
+                    <td>
+                        <a href="tel:{{ fu.mobile }}" style="color:var(--text);text-decoration:none;">
+                            {{ fu.mobile }}
+                        </a>
+                    </td>
+                    <td>{{ fu.caller_name or '–' }}</td>
+                    <td style="font-size:12px;color:var(--text-muted);">{{ fu.follow_up_date or '–' }}</td>
+                    <td style="font-size:12px;color:var(--text-muted);">{{ fu.notes or '–' }}</td>
+                    <td>
+                        <a href="{{ url_for('view_lead', lead_id=fu.lead_id) }}" class="btn btn-outline btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <h3>No follow-ups due today</h3>
+            <p>All caught up! Check back tomorrow.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
